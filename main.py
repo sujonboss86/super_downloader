@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Query, BackgroundTasks
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 import os
 import yt_dlp
 import uuid
+import time  # server uptime calculation
 
 app = FastAPI(
     title="Super Fast Downloader",
     description="Async all-platform video downloader with auto delete",
-    version="3.2",
+    version="3.3",
     contact={"name": "SUJON-BOSS"}  # Author info
 )
 
@@ -28,12 +29,24 @@ def health_check():
     return {"status": "ok", "author": "SUJON-BOSS"}
 
 
-# ✅ Root route → download + send + delete
-@app.get("/")
-async def root_download(url: str = Query(None), background_tasks: BackgroundTasks = None):
-    if not url:
-        return {"message": "Use like: /?url=VIDEO_LINK", "author": "SUJON-BOSS"}
+# ✅ Root route → UptimeRobot friendly HTML
+@app.get("/", response_class=HTMLResponse)
+def root_page():
+    return f"""
+    <h2>🚀 AutoDL API Online</h2>
+    <p>👤 Author: SUJON-BOSS</p>
+    <p>✅ Server running for {int(time.time() - start_time)} seconds</p>
+    <p>Use: /?url=VIDEO_LINK to download video</p>
+    """
 
+
+# Store server start time
+start_time = time.time()
+
+
+# ✅ Download route
+@app.get("/download")
+async def download_video(url: str = Query(...), background_tasks: BackgroundTasks = None):
     try:
         unique_id = str(uuid.uuid4())
         output_path = os.path.join(DOWNLOAD_FOLDER, f"{unique_id}.mp4")
